@@ -56,7 +56,7 @@ def parse(opt_path, is_train=True, args=None):
     opt['network_g']['kernel_size']=args.kernel_size
     opt['network_g']['para_kernel_size']=args.para_kernel_size
     opt['network_g']['padding'] = "constant" if args.zero_padding else "reflect"
-    opt['network_g']['upsampling_method'] = args.upsampling_method
+    opt['network_g']['upsampling_method'] = args.upsample_method
     opt['attack']['adv_attack'] = args.adv_attack
 
     if args.adv_attack:
@@ -101,9 +101,9 @@ def parse(opt_path, is_train=True, args=None):
         drop_word = "without"
     if is_train:
         if args.kernel_size >2:            
-            opt['name'] += '_flc_pooling_{}_Adversarial_training_{}_trans_kernel_{}_para_trans_kernel_{}_upsampling_{}{}'.format(opt['network_g']['flc_pooling'], opt['train']['adversarial'], opt['network_g']['kernel_size'], opt['network_g']['para_kernel_size'], args.upsampling_method, '_normal_training' if args.zero_padding else '')
+            opt['name'] += '_flc_pooling_{}_Adversarial_training_{}_trans_kernel_{}_para_trans_kernel_{}_upsampling_{}{}'.format(opt['network_g']['flc_pooling'], opt['train']['adversarial'], opt['network_g']['kernel_size'], opt['network_g']['para_kernel_size'], args.upsample_method, '_normal_training' if args.zero_padding else '')
         else:
-            opt['name'] += '_flc_pooling_low_freq_{}_{}_alpha_{}_{}_blur_{}_drop_alpha_Adversarial_training_{}_pixel_shuffle_{}_padding_upsampling_{}'.format(opt['network_g']['flc_pooling'], concat_word, 'learned' if args.learn_alpha else 'random', 'with' if args.blur else 'without', drop_word, opt['train']['adversarial'], "zero" if args.zero_padding else "mirror", args.upsampling_method)
+            opt['name'] += '_flc_pooling_low_freq_{}_{}_alpha_{}_{}_blur_{}_drop_alpha_Adversarial_training_{}_pixel_shuffle_{}_padding_upsampling_{}'.format(opt['network_g']['flc_pooling'], concat_word, 'learned' if args.learn_alpha else 'random', 'with' if args.blur else 'without', drop_word, opt['train']['adversarial'], "zero" if args.zero_padding else "mirror", args.upsample_method)
         experiments_root = osp.join(opt['path']['root'], 'experiments',
                                     opt['name'])
         if args.debugging:
@@ -125,11 +125,11 @@ def parse(opt_path, is_train=True, args=None):
             opt['logger']['save_checkpoint_freq'] = 8
     else:  # test
         if args.kernel_size > 2:            
-            results_root = osp.join(opt['path']['root'], '_flc_pooling_{}_trans_kernel_{}_para_trans_kernel_{}_upsampling_{}{}'.format(opt['train']['flc'], opt['network_g']['kernel_size'], opt['network_g']['para_kernel_size'], args.upsampling_method, '_larger' if args.zero_padding else ''), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'],  'results', opt['name'])
+            results_root = osp.join(opt['path']['root'], '_flc_pooling_{}_trans_kernel_{}_para_trans_kernel_{}_upsampling_{}{}'.format(opt['train']['flc'], opt['network_g']['kernel_size'], opt['network_g']['para_kernel_size'], args.upsample_method, '_larger' if args.zero_padding else ''), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'],  'results', opt['name'])
         elif args.use_alpha:
-            results_root = osp.join(opt['path']['root'], 'new', '_flc_pooling_low_freq_{}_{}_alpha_{}_blurring_{}_padding_upsampling_{}'.format(opt['train']['flc'], concat_word, 'learned' if args.learn_alpha else 'random', 'with' if args.blur else 'without', args.upsampling_method), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'], 'results', opt['name'], "zero" if args.zero_padding else "mirror")
+            results_root = osp.join(opt['path']['root'], 'new', '_flc_pooling_low_freq_{}_{}_alpha_{}_blurring_{}_padding_upsampling_{}'.format(opt['train']['flc'], concat_word, 'learned' if args.learn_alpha else 'random', 'with' if args.blur else 'without', args.upsample_method), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'], 'results', opt['name'], "zero" if args.zero_padding else "mirror")
         else:
-            results_root = osp.join(opt['path']['root'], 'new',  '_flc_pooling_low_freq_{}_upsampling_{}'.format(opt['train']['flc'],  args.upsampling_method), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'],  'results', opt['name'])
+            results_root = osp.join(opt['path']['root'], 'new',  '_flc_pooling_low_freq_{}_upsampling_{}'.format(opt['train']['flc'],  args.upsample_method), 'Adversarial_training_{}'.format(opt['train']['adversarial']), opt['attack']['method'], opt['attack']['iterations'], opt['attack']['alpha'], opt['attack']['epsilon'],  'results', opt['name'])
         opt['path']['results_root'] = results_root
         opt['path']['log'] = results_root
         opt['path']['visualization'] = osp.join(results_root, 'visualization')

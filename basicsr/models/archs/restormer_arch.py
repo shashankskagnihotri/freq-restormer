@@ -267,27 +267,48 @@ class FreqAvgUpsample(nn.Module):
     def __init__(self, n_feat, padding='zero'):
         super(FreqAvgUpsample, self).__init__()
         self.padding = 'constant' if padding =='zero' else 'mirror'
-        self.conv1 = nn.Conv2d(n_feat, n_feat//2, kernel_size=3, stride=1, padding=1, groups=n_feat//2, bias=False)
+        self.body = nn.Conv2d(n_feat, n_feat*2, kernel_size=3, stride=1, padding=1, bias=False)
+        #self.conv1 = nn.Conv2d(n_feat, n_feat//2, kernel_size=3, stride=1, padding=1, groups=n_feat//2, bias=False)
         self.beta = nn.Parameter(torch.tensor(0.3), requires_grad = True)
-        self.shuffle = nn.PixelShuffle(2)
+        self.shuffle = nn.PixelShuffle(2)        
 
     def forward(self, x):
         dtype = x.dtype
+        x = self.body(x)
+        #import ipdb;ipdb.set_trace()
         channels = x.shape[1]
         freq = torch.fft.fft2(x.to(torch.float32), norm='forward')
-        avg = torch.mean(freq, dim=1)
-        
-        padding = F.pad(freq, (x.shape[-2], x.shape[-1]), mode=self.padding)
-        freqUp = torch.fft.ifft2(padding, norm='forward').to(dtype)
-        freqUp = self.conv1(freqUp)
-        
-        avg = torch.unsqueeze(avg, dim=1)
-        avg = torch.cat([avg]*channels, dim=1)
-        freq = freq - avg
-        freq = torch.fft.ifft2(freq, norm='forward').to(dtype)
-        highFreq = shuffle(freq)
 
-        return freqUp*(1-beta) + beta*highFreq
+        avg_list, avg_channel_list = [], []
+        for i in range(0, freq.shape[1], 4):
+            avg = torch.mean(freq[:,i:i+4,:,:], dim=1)
+            avg = torch.unsqueeze(avg, dim=1)
+            avg_channels = torch.cat([avg]*4, dim=1)
+            avg_list.append(avg)
+            avg_channel_list.append(avg_channels)
+        #import ipdb;ipdb.set_trace()
+        tmp = torch.cat(avg_list, dim=1)
+        avg_list = torch.cat(avg_list, dim=1)
+        avg_channel_list = torch.cat(avg_channel_list, dim=1)
+                
+        #avg = torch.mean(freq, dim=1)
+        
+        #padding = F.pad(freq, (x.shape[-2], x.shape[-1]), mode=self.padding)
+        #freqUp = torch.fft.ifft2(padding, norm='forward').to(dtype)
+        #freqUp = self.conv1(freqUp)
+        
+        #avg = torch.unsqueeze(avg, dim=1)
+        #avg = torch.cat([avg]*(channels//avg.shape[1]), dim=1)
+        
+        freq = freq - avg_channel_list
+        freq = torch.fft.ifft2(freq, norm='forward').to(dtype)
+        highFreq = self.shuffle(freq)
+
+        padding = F.pad(avg_list, (x.shape[-1], 0, x.shape[-2], 0), mode=self.padding)
+        freqUp = torch.fft.ifft2(padding, norm='forward').to(dtype)
+        #freqUp = self.conv1(freqUp)
+
+        return freqUp*(1-self.beta) + self.beta*highFreq
 
 class SplitUpsampled(nn.Module):
     def __init__(self, n_feat, padding='zero'):
@@ -309,7 +330,7 @@ class SplitUpsampled(nn.Module):
         low =  torch.abs(torch.fft.ifft2(torch.fft.ifftshift(low), norm='forward')).to(dtype)
         high = x - low
 
-        return (1 - beta)*low + beta*high
+        return (1 - self.beta)*low + self.beta*high
 
 
 
@@ -377,39 +398,40 @@ class Restormer(nn.Module):
         self.down3_4 = FLC_Downsample(int(dim*2**2), self.use_conv, self.use_alpha, self.learn_alpha, self.use_blur, self.drop_alpha, self.test_wo_drop_alpha, self.test_drop_alpha, transpose=True, stop = False, half=self.half_precision, padding = self.padding) if self.flc_pooling else Downsample(int(dim*2**2)) ## From Level 3 to Level 4
         self.latent = nn.Sequential(*[TransformerBlock(dim=int(dim*2**3), num_heads=heads[3], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[3])])
         
-        if kernel_size>2:
-            self.up4_3 = TransposedUpsample(int(dim*2**3), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
-        elif self.upsampling_method == 'pixel':
+        #print('\n\n\t\t{}\n\n'.format(self.upsampling_method))
+        if self.upsampling_method == 'pixel':
             self.up4_3 = Upsample(int(dim*2**3))
         elif self.upsampling_method == 'FreqAvgUp':
             self.up4_3 = FreqAvgUpsample(n_feat=int(dim*2**3))
         elif self.upsampling_method == 'SplitUp':
             self.up4_3 = SplitUpsampled(n_feat=int(dim*2**3))
+        elif kernel_size>2:
+            self.up4_3 = TransposedUpsample(int(dim*2**3), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
         #self.up4_3 = Upsample(int(dim*2**3)) if kernel_size<2 else TransposedUpsample(int(dim*2**3), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size) ## From Level 4 to Level 3
         self.reduce_chan_level3 = nn.Conv2d(int(dim*2**3), int(dim*2**2), kernel_size=1, bias=bias)
         self.decoder_level3 = nn.Sequential(*[TransformerBlock(dim=int(dim*2**2), num_heads=heads[2], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[2])])
 
-        if kernel_size>2:
-            self.up4_3 = TransposedUpsample(int(dim*2**2), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
-        elif self.upsampling_method == 'pixel':
-            self.up4_3 = Upsample(int(dim*2**2))
+        if self.upsampling_method == 'pixel':
+            self.up3_2 = Upsample(int(dim*2**2))
         elif self.upsampling_method == 'FreqAvgUp':
-            self.up4_3 = FreqAvgUpsample(n_feat=int(dim*2**2))
+            self.up3_2 = FreqAvgUpsample(n_feat=int(dim*2**2))
         elif self.upsampling_method == 'SplitUp':
-            self.up4_3 = SplitUpsampled(n_feat=int(dim*2**2))
+            self.up3_2 = SplitUpsampled(n_feat=int(dim*2**2))
+        elif kernel_size>2:
+            self.up3_2 = TransposedUpsample(int(dim*2**2), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
         
         #self.up3_2 = Upsample(int(dim*2**2)) if kernel_size<2 else TransposedUpsample(int(dim*2**2), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size) ## From Level 3 to Level 2
         self.reduce_chan_level2 = nn.Conv2d(int(dim*2**2), int(dim*2**1), kernel_size=1, bias=bias)
         self.decoder_level2 = nn.Sequential(*[TransformerBlock(dim=int(dim*2**1), num_heads=heads[1], ffn_expansion_factor=ffn_expansion_factor, bias=bias, LayerNorm_type=LayerNorm_type) for i in range(num_blocks[1])])
         
-        if kernel_size>2:
-            self.up4_3 = TransposedUpsample(int(dim*2**1), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
-        elif self.upsampling_method == 'pixel':
-            self.up4_3 = Upsample(int(dim*2**1))
+        if self.upsampling_method == 'pixel':
+            self.up2_1 = Upsample(int(dim*2**1))
         elif self.upsampling_method == 'FreqAvgUp':
-            self.up4_3 = FreqAvgUpsample(n_feat=int(dim*2**1))
+            self.up2_1 = FreqAvgUpsample(n_feat=int(dim*2**1))
         elif self.upsampling_method == 'SplitUp':
-            self.up4_3 = SplitUpsampled(n_feat=int(dim*2**1))
+            self.up2_1 = SplitUpsampled(n_feat=int(dim*2**1))
+        elif kernel_size>2:
+            self.up2_1 = TransposedUpsample(int(dim*2**1), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)
         
         #self.up2_1 = Upsample(int(dim*2**1)) if kernel_size<2 else TransposedUpsample(int(dim*2**1), kernel_size=self.kernel_size, para_kernel_size = self.para_kernel_size)  ## From Level 2 to Level 1  (NO 1x1 conv to reduce channels)
 
