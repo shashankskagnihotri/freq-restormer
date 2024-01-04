@@ -43,6 +43,7 @@ transposed_adv_paper
 *EXPERIMENTS*
 plots/
 datasets/
+Datasets/
 completed_experiments/
 experiments_conv_before_flc/
 experiments_flc_before_conv/
