@@ -40,7 +40,7 @@ for data in args.data.split('-'):
             # gdown.download(id=GoPro_test, output='Datasets/test.zip', quiet=False)
             os.system(f'gdrive download {GoPro_test} --path Datasets/')
             print('Extracting GoPro Data...')
-            shutil.unpack_archive('/home/shashank/project/Restormer/Motion_Deblurring/Datasets/Downloads/test.zip', 'Datasets')
+            shutil.unpack_archive('Datasets/Downloads/test.zip', 'Datasets')
             os.remove('Datasets/test.zip')
 
         if dataset == 'all' or dataset == 'HIDE':

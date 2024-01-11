@@ -71,7 +71,7 @@ num_cores = 10
 patch_size = 512
 overlap = 256
 p_max = 0
-
+"""
 src = 'Datasets/Downloads/GoPro'
 tar = 'Datasets/train/GoPro'
 
@@ -87,8 +87,7 @@ hr_files = natsorted(glob(os.path.join(src, 'target', '*.png')) + glob(os.path.j
 files = [(i, j) for i, j in zip(lr_files, hr_files)]
 
 Parallel(n_jobs=num_cores)(delayed(train_files)(file_) for file_ in tqdm(files))
-
-
+"""
 ############ Prepare validation data ####################
 val_patch_size = 256
 src = 'Datasets/test/GoPro'

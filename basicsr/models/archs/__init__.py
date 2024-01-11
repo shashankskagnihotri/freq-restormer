@@ -33,6 +33,7 @@ def dynamic_instantiation(modules, cls_type, opt):
 
     for module in modules:
         cls_ = getattr(module, cls_type, None)
+        #print('{} : {} : {}\n'.format(module, cls_type, cls_))
         if cls_ is not None:
             break
     if cls_ is None:
