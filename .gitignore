@@ -32,6 +32,7 @@ new_flc_pool
 *.jpeg
 *.state
 *.log
+*.out
 
 new_flc_attack
 transposed_adv

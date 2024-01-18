@@ -217,12 +217,12 @@ if args.attack:
     if args.kernel_size > 0:
         result_dir  = os.path.join(args.result_dir, dataset, args.result_folder,  'trans_{}_para_trans_{}_flc_{}_adv_train_{}'.format(args.kernel_size, args.para_kernel_size, args.flc, args.adv_trained), args.method, 'iterations_{}'.format(args.iterations), 'alpha_{}'.format(args.alpha), 'epsilon_{}'.format(args.epsilon))
     else:    
-        result_dir  = os.path.join(args.result_dir, dataset, args.result_folder, 'flc_low_freqs_{}_{}_alpha_{}_blur_{}_alpha_{}_drop_alpha_testing_{}_drop_alpha_adv_train_{}_{}_padding'.format(concat_word, 'without' if not args.use_alpha else 'with', 'with' if args.blur else 'without', 'learned' if args.learn_alpha else 'random', drop_word, test_drop_word, args.adv_trained, "zero" if args.zero_padding else "mirror"), args.method, 'iterations_{}'.format(args.iterations), 'alpha_{}'.format(args.alpha), 'epsilon_{}'.format(args.epsilon))
+        result_dir  = os.path.join(args.result_dir, dataset, args.result_folder, 'flc_low_freqs_{}_{}_alpha_{}_blur_{}_alpha_{}_drop_alpha_testing_{}_drop_alpha_adv_train_{}_{}_padding_upsampling_method_{}'.format(concat_word, 'without' if not args.use_alpha else 'with', 'with' if args.blur else 'without', 'learned' if args.learn_alpha else 'random', drop_word, test_drop_word, args.adv_trained, "zero" if args.zero_padding else "mirror", args.upsample_method), args.method, 'iterations_{}'.format(args.iterations), 'alpha_{}'.format(args.alpha), 'epsilon_{}'.format(args.epsilon))
 else:
     if args.kernel_size > 0:
         result_dir  = os.path.join(args.result_dir, dataset, args.result_folder, 'no_attack', 'trans_{}_para_trans_{}_flc_{}_adv_train_{}'.format(args.kernel_size, args.para_kernel_size, args.flc, args.adv_trained))
     else:    
-        result_dir  = os.path.join(args.result_dir, dataset, args.result_folder, 'no_attack', 'flc_low_freqs_{}_{}_alpha_{}_blur_{}_alpha_{}_drop_alpha_testing_{}_drop_alpha_adv_train_{}_{}_padding'.format(concat_word, 'without' if not args.use_alpha else 'with', 'with' if args.blur else 'without', 'learned' if args.learn_alpha else 'random', drop_word, test_drop_word, args.adv_trained, "zero" if args.zero_padding else "mirror"))
+        result_dir  = os.path.join(args.result_dir, dataset, args.result_folder, 'no_attack', 'flc_low_freqs_{}_{}_alpha_{}_blur_{}_alpha_{}_drop_alpha_testing_{}_drop_alpha_adv_train_{}_{}_padding_upsampling_method_{}'.format(concat_word, 'without' if not args.use_alpha else 'with', 'with' if args.blur else 'without', 'learned' if args.learn_alpha else 'random', drop_word, test_drop_word, args.adv_trained, "zero" if args.zero_padding else "mirror", args.upsample_method))
 os.makedirs(result_dir, exist_ok=True)
 
 logging.basicConfig(filename='{}/log.log'.format(result_dir), level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
